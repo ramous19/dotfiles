@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Bootstrap a fresh machine in one shot:
+#
+#   1. Install curl, git, sudo (if missing)
+#   2. Install chezmoi to ~/.local/bin
+#   3. Run `chezmoi init --apply Ramous19` — clones github.com/Ramous19/dotfiles
+#      and applies the dotfiles to $HOME, which in turn runs the install scripts
+#      under .chezmoiscripts/ (system packages, mise tools, fonts, etc.)
+#
+# Usage on a new machine:
+#
+#   curl -fsSL https://raw.githubusercontent.com/Ramous19/dotfiles/main/setup | bash
+#
+# Or, after cloning:
+#
+#   git clone https://github.com/Ramous19/dotfiles ~/.dotfiles && ~/.dotfiles/setup
+
+set -euo pipefail
+
+GITHUB_USER="Ramous19"
+BIN_DIR="$HOME/.local/bin"
+
+log()  { printf '\033[0;34m[setup]\033[0m %s\n'   "$*"; }
+warn() { printf '\033[1;33m[setup]\033[0m %s\n'   "$*" >&2; }
+die()  { printf '\033[0;31m[setup]\033[0m %s\n'   "$*" >&2; exit 1; }
+
+# ─── 1. Prerequisites ────────────────────────────────────────────────────────
+ensure_prereqs() {
+  local missing=()
+  for cmd in curl git; do
+    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+  done
+  if [ "${#missing[@]}" -gt 0 ]; then
+    log "Installing prerequisites: ${missing[*]}"
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update -qq
+      sudo apt-get install -y -qq "${missing[@]}"
+    elif command -v pacman >/dev/null 2>&1; then
+      sudo pacman -Sy --noconfirm --needed "${missing[@]}"
+    elif command -v brew >/dev/null 2>&1; then
+      brew install "${missing[@]}"
+    else
+      die "Don't know how to install ${missing[*]} on this OS. Install them manually and re-run."
+    fi
+  fi
+}
+
+# ─── 2. Install chezmoi to ~/.local/bin ──────────────────────────────────────
+install_chezmoi() {
+  if command -v chezmoi >/dev/null 2>&1; then
+    log "chezmoi already installed: $(chezmoi --version | head -1)"
+    return
+  fi
+  log "Installing chezmoi to $BIN_DIR…"
+  mkdir -p "$BIN_DIR"
+  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$BIN_DIR"
+  export PATH="$BIN_DIR:$PATH"
+}
+
+# ─── 3. Apply dotfiles ───────────────────────────────────────────────────────
+apply_dotfiles() {
+  local chezmoi
+  chezmoi="$(command -v chezmoi || echo "$BIN_DIR/chezmoi")"
+  [ -x "$chezmoi" ] || die "chezmoi not found after install."
+
+  log "Initializing dotfiles from github.com/$GITHUB_USER/dotfiles…"
+  if [ -d "$($chezmoi source-path 2>/dev/null)/.git" ]; then
+    log "Source already initialized — running \`chezmoi apply\`."
+    "$chezmoi" apply
+  else
+    "$chezmoi" init --apply "$GITHUB_USER"
+  fi
+}
+
+main() {
+  echo ""
+  echo "╔══════════════════════════════════════════╗"
+  echo "║       Dotfiles Bootstrap (chezmoi)       ║"
+  echo "╚══════════════════════════════════════════╝"
+  echo ""
+  ensure_prereqs
+  install_chezmoi
+  apply_dotfiles
+  log "Done. Restart your shell:  exec bash -l"
+}
+
+main "$@"

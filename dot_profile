@@ -1,0 +1,11 @@
+# ~/.profile: executed by the command interpreter for login shells.
+# Not read by bash(1) when ~/.bash_profile or ~/.bash_login exists.
+
+# If running bash, include .bashrc.
+if [ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc"
+fi
+
+# Prepend user-local bin dirs to PATH if they exist.
+[ -d "$HOME/bin" ]       && PATH="$HOME/bin:$PATH"
+[ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"

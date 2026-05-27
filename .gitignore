@@ -3,7 +3,6 @@
 *.swo
 *~
 .viminfo
-vim/.viminfo
 
 # Python
 __pycache__/
@@ -11,3 +10,8 @@ __pycache__/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# chezmoi state / local overrides
+.chezmoistate
+chezmoistate.boltdb

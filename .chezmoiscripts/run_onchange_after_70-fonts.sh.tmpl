@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Install JetBrainsMono Nerd Font from the ryanoasis/nerd-fonts release.
+# Re-runs whenever JETBRAINSMONO_VERSION below changes (run_onchange hash).
+
+set -euo pipefail
+log() { printf '\033[0;34m[fonts]\033[0m %s\n' "$*"; }
+
+# Bump this to force re-download.
+JETBRAINSMONO_VERSION="v3.4.0"
+FONT_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerd"
+
+# Skip on container / headless systems where fc-cache isn't useful.
+if ! command -v fc-cache >/dev/null 2>&1; then
+  log "fontconfig not installed — skipping font install."
+  exit 0
+fi
+
+if [ -d "$FONT_DIR" ] && [ -f "$FONT_DIR/.version" ] \
+   && [ "$(cat "$FONT_DIR/.version")" = "$JETBRAINSMONO_VERSION" ]; then
+  log "JetBrainsMono Nerd Font $JETBRAINSMONO_VERSION already installed."
+  exit 0
+fi
+
+log "Downloading JetBrainsMono Nerd Font $JETBRAINSMONO_VERSION…"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+url="https://github.com/ryanoasis/nerd-fonts/releases/download/${JETBRAINSMONO_VERSION}/JetBrainsMono.zip"
+curl -fsSL "$url" -o "$tmp/JetBrainsMono.zip"
+
+log "Installing to $FONT_DIR…"
+rm -rf "$FONT_DIR"
+mkdir -p "$FONT_DIR"
+unzip -qq -o "$tmp/JetBrainsMono.zip" -d "$FONT_DIR"
+echo "$JETBRAINSMONO_VERSION" > "$FONT_DIR/.version"
+
+log "Rebuilding font cache…"
+fc-cache -f "$FONT_DIR" >/dev/null
+log "Done."

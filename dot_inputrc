@@ -1,0 +1,7 @@
+# ~/.inputrc — readline configuration for nicer completion.
+
+set colored-stats on              # colorize completion by file type
+set visible-stats on              # append type indicator (/, *, …)
+set show-all-if-ambiguous on      # show completions on first Tab
+set completion-ignore-case on
+set completion-map-case on        # treat - and _ as equivalent

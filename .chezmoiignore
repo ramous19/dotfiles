@@ -1,0 +1,9 @@
+# Files in the source dir that chezmoi should NOT manage in the target $HOME.
+# (Repo-level files: docs, license, bootstrap, devcontainer, CI.)
+
+README.md
+LICENSE
+setup
+.devcontainer
+.github
+.gitignore

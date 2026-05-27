@@ -1,0 +1,39 @@
+# mise — polyglot runtime/tool version manager
+# https://mise.jdx.dev
+#
+# Edit this file, then run `mise install` to provision tools.
+# Or, since this is managed by chezmoi:
+#   chezmoi apply && mise install
+#
+# Comment out any tool you don't want. Versions:
+#   "latest"  → newest stable
+#   "lts"     → latest LTS (where supported, e.g. node)
+#   "1.2.3"   → pinned
+#
+# Tools come from mise's built-in registry (aqua / ubi backends under the hood)
+# so this same config works on Ubuntu, WSL, Arch, and macOS.
+
+[tools]
+# ── Language runtimes
+node       = "lts"
+
+# ── Cloud / infra
+terraform  = "latest"
+kubectl    = "latest"
+helm       = "latest"
+kustomize  = "latest"
+
+# ── Shell tooling
+starship   = "latest"
+fzf        = "latest"
+zoxide     = "latest"
+jq         = "latest"
+yq         = "latest"
+
+# ── GitHub
+gh         = "latest"
+
+# ── TUIs / utilities
+gum        = "latest"
+lazygit    = "latest"
+delta      = "latest"   # git diff syntax highlighter (dandavison/delta)

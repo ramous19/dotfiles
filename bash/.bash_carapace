@@ -1,9 +1,0 @@
-# Carapace Configuration for Bash
-
-# 1. Bridges
-# Enable bridges for other shells if available.
-export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense'
-
-# 2. Initialize Carapace
-# This defines _carapace_completer and registers it for all supported commands.
-source <(carapace _carapace)

@@ -1,0 +1,121 @@
+# ~/.bashrc — managed by chezmoi
+# Sourced by bash(1) for non-login interactive shells.
+
+# If not running interactively, don't do anything
+case $- in
+  *i*) ;;
+    *) return;;
+esac
+
+# ─── History ─────────────────────────────────────────────────────────────────
+HISTCONTROL=ignoreboth          # ignore duplicates + leading-space lines
+HISTSIZE=1000
+HISTFILESIZE=2000
+shopt -s histappend
+shopt -s checkwinsize
+
+# ─── Lesspipe ────────────────────────────────────────────────────────────────
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# ─── Chroot identifier ───────────────────────────────────────────────────────
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+  debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# ─── Default prompt (replaced by starship below if available) ────────────────
+case "$TERM" in
+  xterm-color|*-256color) color_prompt=yes;;
+esac
+if [ "$color_prompt" = yes ]; then
+  PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+else
+  PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+case "$TERM" in
+  xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+esac
+
+# ─── Color support for ls/grep ───────────────────────────────────────────────
+if [ -x /usr/bin/dircolors ]; then
+  test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+  alias ls='ls --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
+fi
+
+# ─── Aliases ─────────────────────────────────────────────────────────────────
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases
+
+# ─── Programmable completion ─────────────────────────────────────────────────
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+# ─── Editor ──────────────────────────────────────────────────────────────────
+export VISUAL=vim
+export EDITOR="$VISUAL"
+
+{{ if .isWSL -}}
+# ─── WSL: open browser-driven flows (e.g. gcloud auth) in the Windows browser
+if command -v wslview >/dev/null 2>&1; then
+  export BROWSER=wslview
+fi
+{{- end }}
+
+# ─── Homebrew (Linuxbrew on Linux, /opt/homebrew on Apple Silicon) ───────────
+{{ if eq .chezmoi.os "darwin" -}}
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+{{- else -}}
+if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [ -x "$HOME/.linuxbrew/bin/brew" ]; then
+  eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
+fi
+{{- end }}
+
+# ─── mise — polyglot runtime / tool version manager ──────────────────────────
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)"
+elif [ -x "$HOME/.local/bin/mise" ]; then
+  eval "$("$HOME/.local/bin/mise" activate bash)"
+fi
+
+# ─── Starship prompt ─────────────────────────────────────────────────────────
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init bash)"
+fi
+
+# ─── zoxide (smart cd) ───────────────────────────────────────────────────────
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init bash --cmd cd)"
+fi
+
+# ─── fzf key-bindings ────────────────────────────────────────────────────────
+# (Carapace fzf integration disabled by default — fzf --bash conflicts with carapace.)
+if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
+  source /usr/share/doc/fzf/examples/key-bindings.bash
+elif [ -f /usr/share/fzf/key-bindings.bash ]; then
+  source /usr/share/fzf/key-bindings.bash    # Arch path
+fi
+
+# ─── Carapace shell completion ───────────────────────────────────────────────
+[ -f ~/.bash_carapace ] && source ~/.bash_carapace
+
+# ─── thefuck — command correction ────────────────────────────────────────────
+if command -v thefuck >/dev/null 2>&1; then
+  eval "$(thefuck --alias fuck)"
+fi

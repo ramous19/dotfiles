@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Install brew-only packages: things without a clean mise registry entry
+# or first-class distro package.
+#
+#   thefuck       — terminal command corrector (Python-based; brew packages it cleanly)
+#   diffnav       — git diff TUI from dlvhdr (custom tap, brew-only)
+
+set -euo pipefail
+log() { printf '\033[0;34m[brew-pkgs]\033[0m %s\n' "$*"; }
+
+# Ensure brew is on PATH for this subshell.
+if ! command -v brew >/dev/null 2>&1; then
+  if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  elif [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  else
+    log "brew not available — skipping brew packages."
+    exit 0
+  fi
+fi
+
+log "Installing thefuck + diffnav via brew…"
+brew install thefuck || true
+brew install dlvhdr/formulae/diffnav || true
+log "Done."

@@ -1,0 +1,23 @@
+{
+  "name": "dotfiles dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "remoteUser": "vscode",
+  // On container create, point chezmoi at the cloned workspace as the source
+  // dir, so any in-flight edits to dotfiles are applied immediately.
+  "postCreateCommand": "chezmoi init --apply --source=${containerWorkspaceFolder}",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "github.vscode-github-actions",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}

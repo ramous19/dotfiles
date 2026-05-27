@@ -1,0 +1,147 @@
+
+format = """
+[░▒▓](#a3aed2)\
+[  ](bg:#a3aed2 fg:#090c0c)\
+[](bg:#769ff0 fg:#a3aed2)\
+$directory\
+[](fg:#769ff0 bg:#5b7fc7)\
+${custom.git_repo}\
+[](fg:#5b7fc7 bg:#394260)\
+$git_branch\
+$git_status\
+[](fg:#394260 bg:#3a4a78)\
+$gcloud\
+[](fg:#3a4a78 bg:#2e3a5c)\
+{{ if .enableGcloudAdc -}}
+${custom.gcloud_adc}\
+[](fg:#2e3a5c bg:#212736)\
+{{- else -}}
+[](fg:#2e3a5c bg:#212736)\
+{{- end }}
+$nodejs\
+$rust\
+$golang\
+$php\
+[](fg:#212736 bg:#1d2230)\
+$time\
+[ ](fg:#1d2230)\
+\n$character
+"""
+
+# ─────────────────────────────────────────────────────────────
+#  Directory
+# ─────────────────────────────────────────────────────────────
+[directory]
+style = "fg:#e3e5e5 bg:#769ff0"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+# ─────────────────────────────────────────────────────────────
+#  Git repo (owner/repo from remote)
+# ─────────────────────────────────────────────────────────────
+[custom.git_repo]
+description = "Display owner/repo of the current Git repository"
+command = """
+remote_url=$(git config --get remote.origin.url 2>/dev/null)
+[ -z "$remote_url" ] && exit 0
+clean=${remote_url%.git}
+clean=${clean#ssh://}
+clean=${clean#https://}
+clean=${clean#http://}
+clean=${clean#git://}
+clean=${clean#git@}
+clean=${clean#*@}
+clean=${clean/:/\\/}
+echo "${clean#*/}"
+"""
+when = 'git rev-parse --is-inside-work-tree'
+format = '[  $output ]($style)'
+style = 'fg:#f5c2e7 bg:#5b7fc7'
+ignore_timeout = true
+
+# ─────────────────────────────────────────────────────────────
+#  Git
+# ─────────────────────────────────────────────────────────────
+[git_branch]
+symbol = ""
+style = "bg:#394260"
+format = '[[ $symbol $branch ](fg:#769ff0 bg:#394260)]($style)'
+
+[git_status]
+style = "bg:#394260"
+format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
+
+# ─────────────────────────────────────────────────────────────
+#  gcloud (active account + project)
+# ─────────────────────────────────────────────────────────────
+[gcloud]
+format = '[ ☁️  $account@$domain($project) ]($style)'
+style = 'fg:#f9e2af bg:#3a4a78'
+disabled = false
+
+{{ if .enableGcloudAdc -}}
+# ─────────────────────────────────────────────────────────────
+#  gcloud ADC (application-default credentials)
+#  Reads the active service-account/user email from
+#  ~/.config/gcloud/application_default_credentials.json.
+#  Disabled by default (enabled because chezmoi data
+#  .enableGcloudAdc = true was set during `chezmoi init`).
+# ─────────────────────────────────────────────────────────────
+[custom.gcloud_adc]
+description = "Display gcloud application-default credentials account"
+command = '''
+ADC_FILE="$HOME/.config/gcloud/application_default_credentials.json"
+[ -f "$ADC_FILE" ] || exit 0
+if command -v jq >/dev/null 2>&1; then
+  email=$(jq -r '.client_email // .account // empty' "$ADC_FILE" 2>/dev/null)
+fi
+if [ -z "$email" ]; then
+  email=$(grep -Eo '"(client_email|account)"[[:space:]]:[[:space:]]"[^"]+"' "$ADC_FILE" | head -1 | sed -E 's/.*"([^"]+)"$/\1/')
+fi
+[ -z "$email" ] && exit 0
+echo "$email"
+'''
+when = 'true'
+format = '[ 🔑 $output ]($style)'
+style = 'fg:#fab387 bg:#2e3a5c'
+ignore_timeout = true
+{{- end }}
+
+# ─────────────────────────────────────────────────────────────
+#  Languages
+# ─────────────────────────────────────────────────────────────
+[nodejs]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[rust]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[php]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+# ─────────────────────────────────────────────────────────────
+#  Time
+# ─────────────────────────────────────────────────────────────
+[time]
+disabled = false
+time_format = "%R"  # Hour:Minute
+style = "bg:#1d2230"
+format = '[[  $time ](fg:#a0a9cb bg:#1d2230)]($style)'
