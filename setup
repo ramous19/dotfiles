@@ -3,21 +3,21 @@
 #
 #   1. Install curl, git, sudo (if missing)
 #   2. Install chezmoi to ~/.local/bin
-#   3. Run `chezmoi init --apply Ramous19` — clones github.com/Ramous19/dotfiles
+#   3. Run `chezmoi init --apply ramous19` — clones github.com/ramous19/dotfiles
 #      and applies the dotfiles to $HOME, which in turn runs the install scripts
 #      under .chezmoiscripts/ (system packages, mise tools, fonts, etc.)
 #
 # Usage on a new machine:
 #
-#   curl -fsSL https://raw.githubusercontent.com/Ramous19/dotfiles/main/setup | bash
+#   curl -fsSL https://raw.githubusercontent.com/ramous19/dotfiles/main/setup | bash
 #
 # Or, after cloning:
 #
-#   git clone https://github.com/Ramous19/dotfiles ~/.dotfiles && ~/.dotfiles/setup
+#   git clone https://github.com/ramous19/dotfiles ~/.dotfiles && ~/.dotfiles/setup
 
 set -euo pipefail
 
-GITHUB_USER="Ramous19"
+GITHUB_USER="ramous19"
 BIN_DIR="$HOME/.local/bin"
 
 log()  { printf '\033[0;34m[setup]\033[0m %s\n'   "$*"; }

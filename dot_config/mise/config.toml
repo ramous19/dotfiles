@@ -37,3 +37,8 @@ gh         = "latest"
 gum        = "latest"
 lazygit    = "latest"
 delta      = "latest"   # git diff syntax highlighter (dandavison/delta)
+
+# ── Shell completion engine (formerly installed via apt.carapace.sh, which is
+#    not a real host — installing via mise keeps it cross-distro and avoids a
+#    bogus apt repo.)
+carapace   = "latest"

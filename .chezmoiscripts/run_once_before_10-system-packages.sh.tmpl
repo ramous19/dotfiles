@@ -25,16 +25,8 @@ sudo apt-get install -y -qq \
   ca-certificates curl wget git build-essential fontconfig gnupg lsb-release \
   vim tree tmux unzip software-properties-common
 
-# Carapace (shell completion engine) — apt repo from release.dl.carapace.sh
-if ! command -v carapace >/dev/null 2>&1; then
-  log "Adding carapace apt repo…"
-  sudo mkdir -p /etc/apt/keyrings
-  curl -fsSL https://apt.carapace.sh/carapace.gpg | sudo tee /etc/apt/keyrings/carapace.gpg >/dev/null
-  echo "deb [signed-by=/etc/apt/keyrings/carapace.gpg] https://apt.carapace.sh/ /" \
-    | sudo tee /etc/apt/sources.list.d/carapace.list >/dev/null
-  sudo apt-get update -qq
-  sudo apt-get install -y -qq carapace-bin
-fi
+# Carapace is installed via mise (see ~/.config/mise/config.toml).
+# The previous apt repo at apt.carapace.sh does not exist — DNS error 6.
 
 # Docker Engine
 if ! command -v docker >/dev/null 2>&1; then
@@ -65,6 +57,7 @@ fi
 
 {{ else if eq .distro "arch" -}}
 # ─── Arch Linux (pacman + AUR) ────────────────────────────────────────────────
+# Carapace is installed via mise (see ~/.config/mise/config.toml); not via AUR.
 log "Installing base packages via pacman…"
 sudo pacman -Sy --noconfirm --needed \
   curl wget git base-devel fontconfig \
@@ -79,7 +72,7 @@ if systemctl list-unit-files 2>/dev/null | grep -q '^docker\.service'; then
   fi
 fi
 
-# AUR helper (yay) — bootstrap if missing; needed for carapace-bin and google-cloud-cli.
+# AUR helper (yay) — bootstrap if missing; needed for google-cloud-cli.
 if ! command -v yay >/dev/null 2>&1; then
   log "Bootstrapping yay (AUR helper)…"
   tmpdir="$(mktemp -d)"
@@ -88,9 +81,9 @@ if ! command -v yay >/dev/null 2>&1; then
   rm -rf "$tmpdir"
 fi
 
-# AUR packages
-yay -S --noconfirm --needed carapace-bin google-cloud-cli || \
-  warn "AUR install failed — install carapace-bin and google-cloud-cli manually."
+# AUR packages (gcloud only — carapace comes from mise)
+yay -S --noconfirm --needed google-cloud-cli || \
+  warn "AUR install failed — install google-cloud-cli manually."
 
 {{ else if eq .distro "darwin" -}}
 # ─── macOS — most of these come via Homebrew (next step) ──────────────────────

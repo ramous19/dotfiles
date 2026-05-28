@@ -12,13 +12,13 @@ Codespaces- and Dev Container-ready out of the box.
 One-liner on a fresh machine:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ramous19/dotfiles/main/setup | bash
+curl -fsSL https://raw.githubusercontent.com/ramous19/dotfiles/main/setup | bash
 ```
 
 Or, manually:
 
 ```bash
-git clone https://github.com/Ramous19/dotfiles ~/.dotfiles
+git clone https://github.com/ramous19/dotfiles ~/.dotfiles
 ~/.dotfiles/setup
 ```
 
@@ -26,7 +26,7 @@ This will:
 
 1. Install `curl`, `git`, and any other missing prerequisites.
 2. Install [chezmoi](https://www.chezmoi.io/) into `~/.local/bin`.
-3. Run `chezmoi init --apply Ramous19`, which:
+3. Run `chezmoi init --apply ramous19`, which:
    - Prompts once for your git name, git email, and a couple of toggles.
    - Clones this repo into `~/.local/share/chezmoi`.
    - Writes the dotfiles into `$HOME` (`~/.bashrc`, `~/.vimrc`, `~/.config/...`).
