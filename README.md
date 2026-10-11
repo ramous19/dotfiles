@@ -48,16 +48,15 @@ exec bash -l
 ├── .chezmoiignore                     # Repo-meta files to NOT install into $HOME
 ├── .chezmoiscripts/                   # Install hooks (run by `chezmoi apply`)
 │   ├── run_once_before_10-system-packages.sh.tmpl   # apt / pacman + AUR
-│   ├── run_once_before_20-homebrew.sh               # for tools without a better source
-│   ├── run_once_before_30-mise.sh                   # installs mise + `mise install`
-│   ├── run_once_before_40-brew-packages.sh.tmpl     # thefuck, diffnav
+│   ├── run_once_before_30-mise.sh                   # installs the mise binary
+│   ├── run_once_after_50-mise-tools.sh              # `mise install` + thefuck
 │   ├── run_once_after_60-gh-extensions.sh           # gh-dash, gh-enhance
 │   ├── run_onchange_after_70-fonts.sh.tmpl          # JetBrainsMono Nerd Font
 │   └── run_once_after_80-git-ssh.sh.tmpl            # interactive git+SSH setup
 ├── .devcontainer/                     # VS Code Dev Container + Codespaces config
 │   ├── Dockerfile
 │   └── devcontainer.json
-├── dot_bashrc.tmpl                    # → ~/.bashrc        (templated: WSL / brew path)
+├── dot_bashrc.tmpl                    # → ~/.bashrc        (templated: WSL branch)
 ├── dot_bash_logout                    # → ~/.bash_logout
 ├── dot_bash_carapace                  # → ~/.bash_carapace
 ├── dot_profile                        # → ~/.profile
@@ -74,17 +73,52 @@ exec bash -l
 └── README.md
 ```
 
+### Why the mise step is split in two
+
+chezmoi runs every `run_once_before_*` script **before it writes any files**.
+That means `~/.config/mise/config.toml` does not exist yet while the `before`
+scripts run. So `30-mise.sh` only installs the mise *binary*, and
+`50-mise-tools.sh` (an `after` script) does the actual `mise install` once the
+config is on disk. Collapsing these back into one `before` script silently
+installs nothing on a fresh machine.
+
 ## How tools are installed
 
 The split between layers is deliberate. Edit the right file when adding a tool:
 
 | Layer                                          | What lives here                                                                                       |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **`dot_config/mise/config.toml`**              | Almost everything user-space: `node`, `terraform`, `kubectl`, `helm`, `kustomize`, `jq`, `yq`, `fzf`, `zoxide`, `starship`, `gh`, `gum`, `lazygit`, `delta`. Single source of truth across distros. |
-| **System package manager** (apt / pacman+AUR) | System daemons & base toolchain: `git`, `curl`, `build-essential`, `fontconfig`, `vim`, `tree`, `tmux`, `docker`, `carapace-bin`, `google-cloud-cli`. |
-| **Homebrew**                                   | Only tools without a clean mise/distro source: `thefuck`, `diffnav`.                                  |
+| **`dot_config/mise/config.toml`**              | Almost everything user-space: `node`, `python`, `uv`, `terraform`, `kubectl`, `helm`, `kustomize`, `jq`, `yq`, `fzf`, `zoxide`, `starship`, `carapace`, `gh`, `gum`, `lazygit`, `delta`, `diffnav`. Single source of truth across distros. |
+| **System package manager** (apt / pacman+AUR) | System daemons & base toolchain: `git`, `curl`, `build-essential`, `fontconfig`, `vim`, `tree`, `tmux`, `bash-completion`, `net-tools`, `dnsutils`, `redis-tools`, `docker`, `google-cloud-cli` (+ GKE auth plugin), and `wslu` on WSL. |
+| **`uv tool`**                                  | `thefuck` only — see below.                                                                            |
 | **`gh extension`**                             | `dlvhdr/gh-dash`, `dlvhdr/gh-enhance`.                                                                |
 | **`run_onchange_*` font script**               | JetBrainsMono Nerd Font from the [ryanoasis/nerd-fonts release](https://github.com/ryanoasis/nerd-fonts/releases). |
+
+Version policy in `mise/config.toml`: infra tools (`terraform`, `kubectl`,
+`helm`) are pinned to a `major.minor` line so an unattended major bump can't
+break Terraform state compatibility or cause kubectl/helm API skew against live
+clusters. Everything else tracks `latest`.
+
+### Why `thefuck` is special
+
+Upstream `thefuck` is unmaintained and imports `distutils.spawn`, which was
+removed in Python 3.12. A plain `pip`/`uv`/`pipx` install therefore crashes on
+import. `50-mise-tools.sh` installs it with `uv tool install --python 3.11`,
+which gives it a private interpreter that still ships `distutils`.
+
+### Migrating off Homebrew
+
+Earlier revisions of this repo used Homebrew for `thefuck`, `diffnav`,
+`terraform`, `delta` and `gum`. All of those now come from mise/uv, and
+`~/.bashrc` no longer runs `brew shellenv` — `brew shellenv` *prepends* to
+`PATH`, which silently shadowed the mise-managed versions.
+
+If you have a leftover Linuxbrew install, remove it:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+sudo rm -rf /home/linuxbrew
+```
 
 ## Adding a tool
 
@@ -116,13 +150,15 @@ under the appropriate `{{ if eq .distro "…" }}` branch.
 - **Editor**: `vim` with sane defaults (relative numbers, 2-space indent,
   persistent undo, system clipboard, `jk` → Esc).
 - **Smart cd**: [`zoxide`](https://github.com/ajeetdsouza/zoxide) bound to `cd`.
-- **Fuzzy finder**: `fzf` + key bindings.
+- **Fuzzy finder**: `fzf` via `fzf --bash` (Ctrl-R history, Ctrl-T files,
+  Alt-C cd). Carapace is sourced afterwards so it still owns tab completion.
 - **GitHub UX**: `gh` CLI with `gh-dash` (PR/issue dashboard) and
   `gh-enhance` (PR review TUI bound to `T`).
 - **K8s**: `kubectl` + `helm` + `kustomize` (all via mise — no snap needed).
 - **Terminal extras**: `thefuck` (command correction → `fuck`),
   `gum` (interactive prompts), `delta` (git diff viewer), `diffnav`
   (git diff TUI), `lazygit`.
+- **Python**: `python` + [`uv`](https://docs.astral.sh/uv/) via mise.
 
 ## Customization
 

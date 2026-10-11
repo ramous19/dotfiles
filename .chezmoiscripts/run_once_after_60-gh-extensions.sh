@@ -9,14 +9,11 @@ set -euo pipefail
 log() { printf '\033[0;34m[gh-ext]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[gh-ext]\033[0m %s\n' "$*" >&2; }
 
-# mise-installed gh might not be on PATH yet in this subshell.
+# mise-installed gh is not on PATH yet in this subshell.
 if ! command -v gh >/dev/null 2>&1; then
-  for cand in "$HOME/.local/share/mise/shims/gh" "$HOME/.local/bin/gh"; do
-    if [ -x "$cand" ]; then
-      export PATH="$(dirname "$cand"):$PATH"
-      break
-    fi
-  done
+  MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
+  GH="$([ -x "$MISE" ] && "$MISE" which gh 2>/dev/null || true)"
+  [ -x "$GH" ] && export PATH="$(dirname "$GH"):$PATH"
 fi
 
 if ! command -v gh >/dev/null 2>&1; then

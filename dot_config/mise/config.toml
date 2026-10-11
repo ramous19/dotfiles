@@ -8,20 +8,28 @@
 # Comment out any tool you don't want. Versions:
 #   "latest"  → newest stable
 #   "lts"     → latest LTS (where supported, e.g. node)
-#   "1.2.3"   → pinned
+#   "1.16"    → pinned to a major.minor line (patches float)
 #
-# Tools come from mise's built-in registry (aqua / ubi backends under the hood)
-# so this same config works on Ubuntu, WSL, Arch, and macOS.
+# Tools come from mise's built-in registry (aqua / github backends under the
+# hood) so this same config works on Ubuntu, WSL, Arch, and macOS.
+#
+# NOT managed here — see .chezmoiscripts/run_once_before_10-system-packages.sh.tmpl
+# for docker, gcloud, git, vim, tmux and friends (system daemons / OS
+# integration that a user-space version manager has no business owning).
 
 [tools]
 # ── Language runtimes
-node       = "lts"
+node   = "lts"
+python = "3.14"
+uv     = "latest"   # pip/pipx replacement; also used to install thefuck
 
 # ── Cloud / infra
-terraform  = "latest"
-kubectl    = "latest"
-helm       = "latest"
-kustomize  = "latest"
+# Pinned to a major.minor line: an unattended major bump breaks Terraform
+# state compatibility and kubectl/helm API skew against live clusters.
+terraform = "1.16"
+kubectl   = "1.33"
+helm      = "4.3"
+kustomize = "latest"
 
 # ── Shell tooling
 starship   = "latest"
@@ -37,6 +45,9 @@ gh         = "latest"
 gum        = "latest"
 lazygit    = "latest"
 delta      = "latest"   # git diff syntax highlighter (dandavison/delta)
+
+# Not in the mise registry — pulled straight from GitHub releases.
+"github:dlvhdr/diffnav" = "latest"   # git diff TUI
 
 # ── Shell completion engine (formerly installed via apt.carapace.sh, which is
 #    not a real host — installing via mise keeps it cross-distro and avoids a

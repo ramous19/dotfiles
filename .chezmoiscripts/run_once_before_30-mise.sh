@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Install mise (https://mise.jdx.dev) — polyglot runtime / tool version manager.
-# After install, provision every tool declared in ~/.config/mise/config.toml.
+# Install the mise (https://mise.jdx.dev) binary — nothing else.
 #
-# mise is the single source of truth for: node, terraform, kubectl, helm,
-# kustomize, jq, yq, fzf, zoxide, starship, gh, gum, lazygit, delta.
+# Tools are provisioned later by run_once_after_50-mise-tools.sh.
+#
+# Why the split: `run_once_before_*` scripts execute before chezmoi writes any
+# files, so ~/.config/mise/config.toml does not exist yet at this point.
+# Calling `mise install` here silently installs nothing on a fresh machine.
 
 set -euo pipefail
 log() { printf '\033[0;34m[mise]\033[0m %s\n' "$*"; }
@@ -13,7 +15,6 @@ if ! command -v mise >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/mise" ]; then
   curl -fsSL https://mise.run | sh
 fi
 
-# Locate mise binary (PATH may not be updated yet in this subshell).
 MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
 
 if [ ! -x "$MISE" ]; then
@@ -22,6 +23,3 @@ if [ ! -x "$MISE" ]; then
 fi
 
 log "mise version: $("$MISE" --version)"
-log "Provisioning tools from ~/.config/mise/config.toml…"
-"$MISE" install -y
-log "Done. Run \`mise ls\` to inspect installed tools."

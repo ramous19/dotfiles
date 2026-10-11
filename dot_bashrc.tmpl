@@ -74,20 +74,19 @@ if command -v wslview >/dev/null 2>&1; then
 fi
 {{- end }}
 
-# ─── Homebrew (Linuxbrew on Linux, /opt/homebrew on Apple Silicon) ───────────
-{{ if eq .chezmoi.os "darwin" -}}
-if [ -x /opt/homebrew/bin/brew ]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
-{{- else -}}
-if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-elif [ -x "$HOME/.linuxbrew/bin/brew" ]; then
-  eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
-fi
-{{- end }}
+# ─── User-local bin ──────────────────────────────────────────────────────────
+# Home for mise, chezmoi, and uv-installed tools (thefuck/fuck). ~/.profile
+# also adds it, but only for login shells — this covers plain `bash`.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
 
-# ─── mise — polyglot runtime / tool version manager ──────────────────────────
+# ─── mise — polyglot runtime / tool version manager ─────────────────────────────
+# Homebrew is deliberately NOT sourced here. It used to supply terraform,
+# delta, gum and thefuck; all of those now come from mise/uv, and
+# `brew shellenv` prepends to PATH, which silently shadowed them.
+# See the "Migrating off Homebrew" note in the README.
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate bash)"
 elif [ -x "$HOME/.local/bin/mise" ]; then
@@ -105,11 +104,16 @@ if command -v zoxide >/dev/null 2>&1; then
 fi
 
 # ─── fzf key-bindings ────────────────────────────────────────────────────────
-# (Carapace fzf integration disabled by default — fzf --bash conflicts with carapace.)
-if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
-  source /usr/share/doc/fzf/examples/key-bindings.bash
+# mise ships fzf as a bare binary — no /usr/share/doc/fzf/examples/*.bash — so
+# `fzf --bash` is the only portable way to get Ctrl-R / Ctrl-T / Alt-C.
+# It also registers completions, but carapace is sourced after this block and
+# re-registers its own, so carapace still wins there.
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --bash)"
+elif [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
+  source /usr/share/doc/fzf/examples/key-bindings.bash   # Debian/Ubuntu package
 elif [ -f /usr/share/fzf/key-bindings.bash ]; then
-  source /usr/share/fzf/key-bindings.bash    # Arch path
+  source /usr/share/fzf/key-bindings.bash                # Arch package
 fi
 
 # ─── Carapace shell completion ───────────────────────────────────────────────

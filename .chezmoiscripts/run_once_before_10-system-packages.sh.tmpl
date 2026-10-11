@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Install system-level packages that must come from the OS package manager:
-# build toolchain, fonts, system daemons (docker), shell-completion engine
-# (carapace), the cloud SDK, and the core editors/multiplexers.
+# build toolchain, fonts, system daemons (docker), the cloud SDK, and the core
+# editors/multiplexers.
 #
-# Everything user-space (node, terraform, kubectl, helm, jq, fzf, zoxide,
-# starship, gh, gum, delta, …) lives in ~/.config/mise/config.toml and is
-# installed by the mise step — not here.
+# Everything user-space (node, python, terraform, kubectl, helm, jq, fzf,
+# zoxide, starship, carapace, gh, gum, delta, diffnav, …) lives in
+# ~/.config/mise/config.toml and is installed by the mise step — not here.
 #
 # This script is distro-aware. Add new distros by extending the if/elif chain.
 #
@@ -23,10 +23,18 @@ log "Installing base packages via apt…"
 sudo apt-get update -qq
 sudo apt-get install -y -qq \
   ca-certificates curl wget git build-essential fontconfig gnupg lsb-release \
-  vim tree tmux unzip software-properties-common
+  vim tree tmux unzip software-properties-common bash-completion \
+  net-tools dnsutils redis-tools
 
 # Carapace is installed via mise (see ~/.config/mise/config.toml).
 # The previous apt repo at apt.carapace.sh does not exist — DNS error 6.
+
+{{ if .isWSL -}}
+# wslu provides `wslview`, which ~/.bashrc exports as $BROWSER so that
+# browser-driven flows (gcloud auth, gh auth login) open on the Windows side.
+log "WSL detected — installing wslu…"
+sudo apt-get install -y -qq wslu || warn "wslu unavailable — \$BROWSER=wslview will not work."
+{{ end -}}
 
 # Docker Engine
 if ! command -v docker >/dev/null 2>&1; then
@@ -45,6 +53,8 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # Google Cloud SDK
+# Kept on apt rather than mise: only the packaged SDK can manage components
+# (bq, gsutil) and ship the GKE auth plugin kubectl needs.
 if ! command -v gcloud >/dev/null 2>&1; then
   log "Adding gcloud apt repo…"
   curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
@@ -52,16 +62,17 @@ if ! command -v gcloud >/dev/null 2>&1; then
   echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
     | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list >/dev/null
   sudo apt-get update -qq
-  sudo apt-get install -y -qq google-cloud-cli
 fi
+# kubectl refuses to auth against GKE without this plugin.
+sudo apt-get install -y -qq google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin
 
 {{ else if eq .distro "arch" -}}
 # ─── Arch Linux (pacman + AUR) ────────────────────────────────────────────────
 # Carapace is installed via mise (see ~/.config/mise/config.toml); not via AUR.
 log "Installing base packages via pacman…"
 sudo pacman -Sy --noconfirm --needed \
-  curl wget git base-devel fontconfig \
-  vim tree tmux unzip docker
+  curl wget git base-devel fontconfig bash-completion \
+  vim tree tmux unzip docker net-tools bind redis
 
 # Enable docker daemon
 if systemctl list-unit-files 2>/dev/null | grep -q '^docker\.service'; then
@@ -82,7 +93,7 @@ if ! command -v yay >/dev/null 2>&1; then
 fi
 
 # AUR packages (gcloud only — carapace comes from mise)
-yay -S --noconfirm --needed google-cloud-cli || \
+yay -S --noconfirm --needed google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin || \
   warn "AUR install failed — install google-cloud-cli manually."
 
 {{ else if eq .distro "darwin" -}}
